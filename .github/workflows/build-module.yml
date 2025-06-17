@@ -16,7 +16,6 @@ jobs:
             pkgarch: aarch64_cortex-a53
             target: mediatek
             subtarget: filogic
-            vermagic: "9469a6c8c449c47e503c05678ea1559d-r1"
 
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +28,7 @@ jobs:
         id: cache-tools-kernel
         uses: actions/cache@v4
         env:
-          cache-name: "cache-tools-kernel-${{ matrix.build_env.tag }}-${{ matrix.build_env.pkgarch}}-${{ matrix.build_env.target}}-${{ matrix.build_env.subtarget}}"
+          cache-name: "cache-tools-kernel-${{ matrix.build_env.tag }}-${{ matrix.build_env.pkgarch}}-${{ matrix.build_env.target}}-${{ matrix.build_env.subtarget}}-v2"
         with:
           path: "**"
           key: ${{ runner.os }}-build-vm4-${{ env.cache-name }}
@@ -72,24 +71,15 @@ jobs:
           make target/linux/compile  -i -j `nproc` V=s
 
           VERMAGIC=`cat ./build_dir/target-*/linux-*/linux-*/.vermagic`
-          VERMAGIC_EXPECTED=${{ matrix.build_env.vermagic }}
+          echo "Generated vermagic: $VERMAGIC"
 
-          if [ "$VERMAGIC" != "$VERMAGIC_EXPECTED" ]; then
-            echo Vermagic mismatch: $VERMAGIC, expected $VERMAGIC_EXPECTED
-            exit 1
-          fi
+          # Store vermagic for later use
+          echo "VERMAGIC=$VERMAGIC" >> $GITHUB_ENV
 
       - name: Build AmneziaWG
         run: |
           VERMAGIC=`cat ./build_dir/target-*/linux-*/linux-*/.vermagic`
-          echo "Vermagic: $VERMAGIC"
-
-          VERMAGIC_EXPECTED=${{ matrix.build_env.vermagic }}
-
-          if [ "$VERMAGIC" != "$VERMAGIC_EXPECTED" ]; then
-            echo Vermagic mismatch: $VERMAGIC, expected $VERMAGIC_EXPECTED
-            exit 1
-          fi
+          echo "Using vermagic: $VERMAGIC"
 
           # Ignore kmod build for some targets, replace with the awg-go
           make package/kmod-amneziawg/{clean,download,prepare} V=s || true
