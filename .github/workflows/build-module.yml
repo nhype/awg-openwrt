@@ -16,6 +16,7 @@ jobs:
             pkgarch: aarch64_cortex-a53
             target: mediatek
             subtarget: filogic
+            vermagic: "9469a6c8c449c47e503c05678ea1559d-r1"
 
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +72,13 @@ jobs:
           make target/linux/compile  -i -j `nproc` V=s
 
           VERMAGIC=`cat ./build_dir/target-*/linux-*/linux-*/.vermagic`
+          VERMAGIC_EXPECTED=${{ matrix.build_env.vermagic }}
+
+          if [ "$VERMAGIC" != "$VERMAGIC_EXPECTED" ]; then
+            echo Vermagic mismatch: $VERMAGIC, expected $VERMAGIC_EXPECTED
+            exit 1
+          fi
+
           echo "Generated vermagic: $VERMAGIC"
 
           # Store vermagic for later use
@@ -79,7 +87,14 @@ jobs:
       - name: Build AmneziaWG
         run: |
           VERMAGIC=`cat ./build_dir/target-*/linux-*/linux-*/.vermagic`
-          echo "Using vermagic: $VERMAGIC"
+          echo "Vermagic: $VERMAGIC"
+
+          VERMAGIC_EXPECTED=${{ matrix.build_env.vermagic }}
+
+          if [ "$VERMAGIC" != "$VERMAGIC_EXPECTED" ]; then
+            echo Vermagic mismatch: $VERMAGIC, expected $VERMAGIC_EXPECTED
+            exit 1
+          fi
 
           # Ignore kmod build for some targets, replace with the awg-go
           make package/kmod-amneziawg/{clean,download,prepare} V=s || true
